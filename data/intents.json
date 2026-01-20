@@ -1,0 +1,33 @@
+{
+  "greeting": [
+    "hi",
+    "hello",
+    "hey",
+    "good morning",
+    "good evening"
+  ],
+  "help": [
+    "i need help",
+    "can you help me",
+    "what can you do",
+    "assist me"
+  ],
+  "goodbye": [
+    "bye",
+    "goodbye",
+    "see you later",
+    "exit"
+  ],
+"build_project": [
+  "i want to build something big",
+  "i want to create a startup",
+  "i want to make an ai",
+  "i want to build an ai chatbot",
+  "i want to build a chatbot",
+  "i want to build a chatbot for education",
+  "i want to create an ai system for education",
+  "i want to build a project using ai",
+  "i want to make something using ai"
+]
+
+}

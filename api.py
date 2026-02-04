@@ -39,7 +39,8 @@ def chat_stream(req: ChatRequest):
 
     def event_generator():
         try:
-            response = bot.handle(req.massage)
+            response = bot.handle(req.message)
+            
 
             if not response:
                 yield "data: ⚠️ Empty response\n\n"
@@ -49,6 +50,8 @@ def chat_stream(req: ChatRequest):
             for word in response.split():
                 yield f"data: {word}\n\n"
                 time.sleep(0.04)
+
+            return{"response":response}
 
         except Exception as e:
             # 🔥 CRITICAL: never let generator crash

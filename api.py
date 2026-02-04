@@ -34,22 +34,31 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 @app.post("/chat-stream")
+def chat_stream(req: ChatRequest):
 
-def chat_stream(request:dict):
-    user_input = request.get("massage","")
+    def event_generator():
+        try:
+            response = bot.handle(req.massage)
 
-    def event_gentrator():
-        # 🔴 TEMP: simulate streaming
-        # Later this will come from the LLM
-        response = bot.handle(user_input)
+            if not response:
+                yield "data: ⚠️ Empty response\n\n"
+                yield "data: [END]\n\n"
+                return
 
-        for word in response.split():
-            yield f"data:{word}\n\n"
-            time.sleep(.05)
-        yield "data:[END]\n\n"
+            for word in response.split():
+                yield f"data: {word}\n\n"
+                time.sleep(0.04)
+
+        except Exception as e:
+            # 🔥 CRITICAL: never let generator crash
+            yield f"data: ⚠️ LLM error: {str(e)}\n\n"
+
+        finally:
+            # 🔥 ALWAYS end the stream
+            yield "data: [END]\n\n"
+
     return StreamingResponse(
-        event_gentrator(),
-        media_type="text/event-steam"
-    )   
+        event_generator(),
+        media_type="text/event-stream"
+    )

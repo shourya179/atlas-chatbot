@@ -35,7 +35,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.post("chat-stream")
+@app.post("/chat-stream")
 
 def chat_stream(request:dict):
     user_input = request.get("massage","")
@@ -52,4 +52,4 @@ def chat_stream(request:dict):
     return StreamingResponse(
         event_gentrator(),
         media_type="text/event-steam"
-    )
+    )   

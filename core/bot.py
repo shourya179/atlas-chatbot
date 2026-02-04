@@ -111,6 +111,12 @@ class chatbot:
 "You are running locally and may have limitations."
 "If a request cannot be fulfilled, explain the limitation clearly and suggest an alternative."
 
+"Follow-up behavior rules:"
+"- Ask at most one follow-up question."
+"- Ask a follow-up only if it clearly helps move the conversation forward."
+"- Make follow-up questions specific and actionable."
+"- Do not ask a follow-up if the user’s intent is already clear."
+
                 )
             }
         ]

@@ -44,12 +44,11 @@ def chat_stream(req: ChatRequest):
 
             if not response:
                 yield "data: ⚠️ Empty response\n\n"
-                yield "data: [END]\n\n"
                 return
 
             for word in response.split():
                 yield f"data: {word}\n\n"
-                time.sleep(0.04)
+                time.sleep(0.05)
 
             return{"response":response}
 

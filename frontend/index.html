@@ -4,22 +4,48 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Atlas Assistant</title>
+
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
     .message {
-      animation: slideUp 0.2s ease-out;
+      animation: slideUp 0.25s ease-out;
     }
 
     @keyframes slideUp {
       from {
         opacity: 0;
-        transform: translateY(6px);
+        transform: translateY(8px);
       }
       to {
         opacity: 1;
         transform: translateY(0);
       }
+    }
+
+    .typing {
+      display: flex;
+      gap: 6px;
+      padding: 10px 14px;
+      background: #1f2937;
+      border-radius: 16px;
+      width: fit-content;
+    }
+
+    .dot {
+      width: 6px;
+      height: 6px;
+      background: #9ca3af;
+      border-radius: 50%;
+      animation: bounce 1.4s infinite ease-in-out;
+    }
+
+    .dot:nth-child(2) { animation-delay: 0.2s; }
+    .dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes bounce {
+      0%, 80%, 100% { transform: scale(0); }
+      40% { transform: scale(1); }
     }
   </style>
 </head>
@@ -35,22 +61,19 @@
       </div>
       <div class="flex-1">
         <h1 class="font-semibold text-lg">Atlas</h1>
-        <p class="text-xs text-green-400">Online</p>
+        <p class="text-xs text-green-400">Online • Ready to help</p>
       </div>
     </header>
 
     <!-- Chat Area -->
     <main id="chat-area" class="flex-1 overflow-y-auto px-6 py-6 space-y-4">
-
-      <!-- Initial message -->
-      <div class="flex">
+      <div class="flex message">
         <div class="bg-slate-800 px-4 py-3 rounded-2xl rounded-tl-sm max-w-[80%]">
           Hi, I’m Atlas 👋<br />
           I’m your personal AI assistant.<br /><br />
           Ask me anything or explore ideas step by step.
         </div>
       </div>
-
     </main>
 
     <!-- Input -->
@@ -65,8 +88,7 @@
         <button
           id="send-btn"
           type="submit"
-          class="bg-gradient-to-br from-indigo-500 to-purple-500 px-5 py-3 rounded-xl font-semibold hover:opacity-90 disabled:opacity-50"
-        >
+          class="bg-gradient-to-br from-indigo-500 to-purple-500 px-5 py-3 rounded-xl font-semibold hover:opacity-90 disabled:opacity-50">
           Send
         </button>
       </form>
@@ -74,7 +96,6 @@
 
   </div>
 
-  <!-- JavaScript -->
   <script>
     const chatArea = document.getElementById("chat-area");
     const form = document.getElementById("chat-form");
@@ -98,57 +119,90 @@
       return bubble;
     }
 
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
+    function showTyping() {
+      const wrapper = document.createElement("div");
+      wrapper.id = "typing";
+      wrapper.className = "flex justify-start message";
 
+      wrapper.innerHTML = `
+        <div class="typing">
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+        </div>
+      `;
+
+      chatArea.appendChild(wrapper);
+      chatArea.scrollTop = chatArea.scrollHeight;
+    }
+
+    function removeTyping() {
+      const t = document.getElementById("typing");
+      if (t) t.remove();
+    }
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
       const text = input.value.trim();
       if (!text) return;
 
-      // User message
       addMessage(text, true);
       input.value = "";
       sendBtn.disabled = true;
 
-      // Empty Atlas bubble
+      showTyping();
       const atlasBubble = addMessage("", false);
+      let firstChunk = true;
 
-      try {
-        const response = await fetch("http://127.0.0.1:8000/chat-stream", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: text })
-        });
-
+      fetch("http://127.0.0.1:8000/chat-stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text })
+      })
+      .then(response => {
         const reader = response.body.getReader();
-        const decoder = new TextDecoder();
+        const decoder = new TextDecoder("utf-8");
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split("\n");
-
-          for (const line of lines) {
-            if (line.startsWith("data:")) {
-              const word = line.replace("data:", "").trim();
-
-              if (word === "[END]") {
-                sendBtn.disabled = false;
-                return;
-              }
-
-              atlasBubble.textContent += word + " ";
-              chatArea.scrollTop = chatArea.scrollHeight;
+        function read() {
+          reader.read().then(({ done, value }) => {
+            if (done) {
+              sendBtn.disabled = false;
+              return;
             }
-          }
+
+            const chunk = decoder.decode(value, { stream: true });
+            const lines = chunk.split("\n");
+
+            for (const line of lines) {
+              if (line.startsWith("data:")) {
+                const word = line.replace("data:", "").trim();
+
+                if (word === "[END]") {
+                  sendBtn.disabled = false;
+                  return;
+                }
+
+                if (firstChunk) {
+                  removeTyping();
+                  firstChunk = false;
+                }
+
+                atlasBubble.textContent += word + " ";
+              }
+            }
+
+            chatArea.scrollTop = chatArea.scrollHeight;
+            read();
+          });
         }
 
-      } catch (err) {
+        read();
+      })
+      .catch(() => {
+        removeTyping();
         atlasBubble.textContent = "⚠️ Server error.";
         sendBtn.disabled = false;
-        console.error(err);
-      }
+      });
     });
   </script>
 
